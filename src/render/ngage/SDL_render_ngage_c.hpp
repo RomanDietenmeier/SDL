@@ -23,6 +23,7 @@
 #define ngage_video_render_ngage_c_hpp
 
 #include "SDL_render_ngage_c.h"
+#include <3dtypes.h>
 #include <NRenderer.h>
 #include <e32std.h>
 #include <w32std.h>
@@ -86,6 +87,39 @@ class CRenderer : public MDirectScreenAccess
 
     // Screen saver.
     TBool iSuspendScreenSaver;
+
+    // Work buffers for texture transformations (reusable to avoid per-frame allocations).
+    void *iWorkBuffer1;
+    void *iWorkBuffer2;
+    TInt iWorkBufferSize;
+
+    // Temporary render bitmap to avoid destroying source textures.
+    CFbsBitmap *iTempRenderBitmap;
+    TInt iTempRenderBitmapWidth;
+    TInt iTempRenderBitmapHeight;
+
+    // Color modulation lookup tables (pre-calculated to avoid per-pixel FixMul).
+    TUint8 iColorModLUT[768]; // 256 entries each for R, G, B
+    TFixed iLastColorR;
+    TFixed iLastColorG;
+    TFixed iLastColorB;
+
+    // Reusable line points buffer to avoid per-frame allocations in DrawLines.
+    TPoint *iLinePointsBuffer;
+    TInt iLinePointsBufferCapacity;
+
+    // Cached draw color to avoid redundant SetPenColor/SetBrushColor calls.
+    TUint32 iLastDrawColor;
+
+    // Cached clear color to avoid redundant SetBrushColor calls.
+    TUint32 iLastClearColor;
+
+    // Helper methods.
+    bool EnsureWorkBufferCapacity(TInt aRequiredSize);
+    bool EnsureTempBitmapCapacity(TInt aWidth, TInt aHeight);
+    bool EnsureLinePointsCapacity(TInt aRequiredCount);
+    void BuildColorModLUT(TFixed rf, TFixed gf, TFixed bf);
+    CFbsBitmap *GetCardinalRotation(NGAGE_TextureData *aTextureData, TInt aAngleIndex);
 };
 
 #endif // ngage_video_render_ngage_c_hpp
